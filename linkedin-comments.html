@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LinkedIn Comment Generator</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --linkedin-blue: #0a66c2;
+      --linkedin-blue-hover: #004182;
+      --linkedin-light: #e8f0fe;
+      --bg: #f3f2ef;
+      --card-bg: #ffffff;
+      --text-primary: #191919;
+      --text-secondary: #666666;
+      --text-muted: #00000099;
+      --border: #e0e0e0;
+      --success: #057642;
+      --success-bg: #e6f4ed;
+      --error: #cc1016;
+      --error-bg: #fce8e8;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 24px 16px;
+      margin-bottom: 8px;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--linkedin-blue);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .header-icon svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Form */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group:last-of-type {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    label .hint {
+      font-weight: 400;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      color: var(--text-primary);
+      background: var(--card-bg);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--linkedin-blue);
+      box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.15);
+    }
+
+    input::placeholder {
+      color: #aaa;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    /* Dropdown row */
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    /* Submit button */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--linkedin-blue);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      background: var(--linkedin-blue-hover);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      background: #a0c4e8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Loading state */
+    .loading-card {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .loading-card .spinner-large {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--linkedin-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    .loading-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .loading-card .loading-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Results */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .results-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .btn-new {
+      font-size: 13px;
+      color: var(--linkedin-blue);
+      font-weight: 600;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 16px;
+      transition: background 0.15s;
+    }
+
+    .btn-new:hover {
+      background: var(--linkedin-light);
+    }
+
+    /* Comment option card */
+    .option-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .option-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 0;
+    }
+
+    .option-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--linkedin-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: var(--linkedin-light);
+      color: var(--linkedin-blue);
+      border: none;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-copy:hover {
+      background: var(--linkedin-blue);
+      color: white;
+    }
+
+    .btn-copy:active {
+      transform: scale(0.95);
+    }
+
+    .btn-copy.copied {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .btn-copy svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .option-text {
+      padding: 12px 16px 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Summary section */
+    .summary-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .summary-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .summary-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .summary-toggle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+    }
+
+    .summary-body {
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .summary-body.collapsed {
+      display: none;
+    }
+
+    /* Error */
+    .error-card {
+      background: var(--error-bg);
+      border: 1px solid var(--error);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .error-card p {
+      color: var(--error);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .error-card .error-detail {
+      font-weight: 400;
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      .container {
+        padding: 12px;
+      }
+
+      .header {
+        padding: 20px 12px;
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+    }
+
+    /* Hide results initially */
+    #results-section { display: none; }
+    #loading-section { display: none; }
+    #error-section { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+    </div>
+    <h1>LinkedIn Comment Generator</h1>
+    <p>Generate smart comment responses for any LinkedIn post</p>
+  </div>
+
+  <!-- Form -->
+  <div id="form-section" class="card">
+    <form id="comment-form" onsubmit="return handleSubmit(event)">
+      <div class="form-group">
+        <label for="post-url">LinkedIn Post URL</label>
+        <input
+          type="url"
+          id="post-url"
+          name="post-url"
+          placeholder="https://www.linkedin.com/posts/..."
+          required
+          autocomplete="off"
+          inputmode="url"
+        >
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="num-options">Responses</label>
+          <select id="num-options" name="num-options">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="tone">Tone</label>
+          <select id="tone" name="tone">
+            <option value="Professional">Professional</option>
+            <option value="Conversational" selected>Conversational</option>
+            <option value="Creative">Creative</option>
+            <option value="Geeky">Geeky</option>
+            <option value="Confrontational">Confrontational</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submit-btn">
+        <span id="btn-text">Generate Comments</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-section" class="card loading-card">
+    <div class="spinner-large"></div>
+    <p>Analyzing post and generating comments...</p>
+    <p class="loading-hint">This may take 30-60 seconds while we scrape the post and analyze comments.</p>
+  </div>
+
+  <!-- Error -->
+  <div id="error-section">
+    <div class="error-card">
+      <p>Something went wrong</p>
+      <p class="error-detail" id="error-message"></p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section">
+    <div class="results-header">
+      <h2>Your Comments</h2>
+      <button class="btn-new" onclick="resetForm()">+ New</button>
+    </div>
+    <div id="options-container"></div>
+    <div id="summary-container"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+  // -- Configuration --
+  const WEBHOOK_URL = 'https://n8n.xdo.it.com/webhook/LinkedIn_Comments';
+
+  // -- DOM refs --
+  const form = document.getElementById('comment-form');
+  const formSection = document.getElementById('form-section');
+  const loadingSection = document.getElementById('loading-section');
+  const errorSection = document.getElementById('error-section');
+  const resultsSection = document.getElementById('results-section');
+  const optionsContainer = document.getElementById('options-container');
+  const summaryContainer = document.getElementById('summary-container');
+  const submitBtn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  const errorMessage = document.getElementById('error-message');
+  const toast = document.getElementById('toast');
+
+  function showSection(section) {
+    [formSection, loadingSection, errorSection, resultsSection].forEach(s => s.style.display = 'none');
+    if (section === 'form') { formSection.style.display = 'block'; }
+    else if (section === 'loading') { formSection.style.display = 'block'; loadingSection.style.display = 'block'; }
+    else if (section === 'error') { formSection.style.display = 'block'; errorSection.style.display = 'block'; }
+    else if (section === 'results') { resultsSection.style.display = 'block'; }
+  }
+
+  function setLoading(loading) {
+    if (loading) {
+      submitBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Generating...';
+      showSection('loading');
+    } else {
+      submitBtn.disabled = false;
+      btnText.textContent = 'Generate Comments';
+      loadingSection.style.display = 'none';
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    errorSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+
+    const postUrl = document.getElementById('post-url').value.trim();
+    const numOptions = document.getElementById('num-options').value;
+    const tone = document.getElementById('tone').value;
+
+    if (!postUrl) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          'LinkedIn Post URL': postUrl,
+          'Number of Response Options': numOptions,
+          'Tone': tone,
+          'maxComments': 50
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      const output = data.output || data.text || '';
+
+      if (!output) {
+        throw new Error('No output received from the server.');
+      }
+
+      renderResults(output);
+      setLoading(false);
+      showSection('results');
+
+      // Scroll to results
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      setLoading(false);
+      errorMessage.textContent = err.message || 'Please check your connection and try again.';
+      showSection('error');
+    }
+
+    return false;
+  }
+
+  function renderResults(output) {
+    optionsContainer.innerHTML = '';
+    summaryContainer.innerHTML = '';
+
+    // Parse options: look for **OPTION N:** blocks
+    const parsed = parseOptions(output);
+
+    // Render comment options
+    parsed.options.forEach((opt, i) => {
+      const card = document.createElement('div');
+      card.className = 'option-card';
+      card.innerHTML = `
+        <div class="option-header">
+          <span class="option-label">Option ${i + 1}</span>
+          <button class="btn-copy" onclick="copyText(this, ${i})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="option-text" id="option-text-${i}">${escapeHtml(opt.trim())}</div>
+      `;
+      optionsContainer.appendChild(card);
+    });
+
+    // Render summary if present
+    if (parsed.summary) {
+      const summaryCard = document.createElement('div');
+      summaryCard.className = 'summary-card';
+      summaryCard.innerHTML = `
+        <div class="summary-header" onclick="toggleSummary(this)">
+          <h3>Comment Summary & Analysis</h3>
+          <span class="summary-toggle">&#9660;</span>
+        </div>
+        <div class="summary-body">${escapeHtml(parsed.summary.trim())}</div>
+      `;
+      summaryContainer.appendChild(summaryCard);
+    }
+
+    // Render comment count if present
+    if (parsed.commentCount) {
+      const countCard = document.createElement('div');
+      countCard.className = 'summary-card';
+      countCard.innerHTML = `
+        <div class="summary-header">
+          <h3>Total Comments Analyzed</h3>
+          <span style="font-weight:700; color: var(--linkedin-blue);">${escapeHtml(parsed.commentCount.trim())}</span>
+        </div>
+      `;
+      summaryContainer.appendChild(countCard);
+    }
+  }
+
+  function parseOptions(text) {
+    const result = { options: [], summary: '', commentCount: '' };
+
+    // Extract options using regex - handle **OPTION N:** pattern
+    // Split by option markers
+    const optionPattern = /\*\*OPTION\s+\d+:\*\*/gi;
+    const markers = [...text.matchAll(optionPattern)];
+
+    if (markers.length > 0) {
+      for (let i = 0; i < markers.length; i++) {
+        const startIdx = markers[i].index + markers[i][0].length;
+        let endIdx;
+
+        if (i + 1 < markers.length) {
+          endIdx = markers[i + 1].index;
+        } else {
+          // Find the end: either **Summary** or **Number of Comments** or end of text
+          const summaryMatch = text.substring(startIdx).search(/\*\*(Summary|Comment Summary|Number of Comments|SUMMARY)\*\*/i);
+          endIdx = summaryMatch > -1 ? startIdx + summaryMatch : text.length;
+        }
+
+        const optionText = text.substring(startIdx, endIdx).replace(/^[\s\-\n]+/, '').replace(/[\s\-\n]+$/, '');
+        if (optionText) {
+          result.options.push(cleanOption(optionText));
+        }
+      }
+    } else {
+      // Fallback: try to split by numbered patterns like "1." or "**1.**"
+      const numberedPattern = /\*\*\d+[\.\)]/g;
+      const numMarkers = [...text.matchAll(numberedPattern)];
+
+      if (numMarkers.length > 0) {
+        for (let i = 0; i < numMarkers.length; i++) {
+          const startIdx = numMarkers[i].index + numMarkers[i][0].length;
+          const endIdx = i + 1 < numMarkers.length ? numMarkers[i + 1].index : text.length;
+          const optionText = text.substring(startIdx, endIdx).replace(/^[\s\*]+/, '').replace(/[\s\*]+$/, '');
+          if (optionText) {
+            result.options.push(cleanOption(optionText));
+          }
+        }
+      } else {
+        // Last fallback: treat entire output as one option
+        result.options.push(text);
+      }
+    }
+
+    // Extract summary
+    const summaryMatch = text.match(/\*\*(Summary|Comment Summary|SUMMARY)\*\*\s*([\s\S]*?)(?=\*\*(Number of Comments|COMMENT COUNT|Comment Count)\*\*|---\s*$|$)/i);
+    if (summaryMatch) {
+      result.summary = summaryMatch[2].replace(/^\s*\n/, '').replace(/\n\s*$/, '');
+    }
+
+    // Extract comment count
+    const countMatch = text.match(/\*\*(Number of Comments|COMMENT COUNT|Comment Count)\*\*\s*([\s\S]*?)(?=---|$)/i);
+    if (countMatch) {
+      result.commentCount = countMatch[2].replace(/^\s*\n/, '').replace(/\n\s*$/, '').replace(/\*\*/g, '');
+    }
+
+    return result;
+  }
+
+  function cleanOption(text) {
+    // Remove trailing --- separators and extra whitespace
+    return text.replace(/---\s*$/, '').replace(/\*\*/g, '').trim();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  async function copyText(btn, index) {
+    const textEl = document.getElementById(`option-text-${index}`);
+    const text = textEl.textContent;
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers / non-HTTPS
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+
+    // Visual feedback
+    const originalHTML = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      Copied!
+    `;
+
+    showToast('Copied to clipboard');
+
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = originalHTML;
+    }, 2000);
+  }
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function toggleSummary(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.summary-toggle');
+    body.classList.toggle('collapsed');
+    toggle.style.transform = body.classList.contains('collapsed') ? 'rotate(-90deg)' : '';
+  }
+
+  function resetForm() {
+    showSection('form');
+    resultsSection.style.display = 'none';
+    document.getElementById('post-url').value = '';
+    document.getElementById('post-url').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
